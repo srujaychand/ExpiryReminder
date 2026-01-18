@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { APP_ICONS } from '../constants.tsx';
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: 'dashboard' | 'items' | 'add' | 'settings';
+  activeTab: 'items' | 'add' | 'settings';
   onTabChange: (tab: any) => void;
 }
 
@@ -52,14 +51,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
         <div className="flex justify-around items-center px-2">
-          <button 
-            onClick={() => onTabChange('dashboard')}
-            className={`flex flex-col items-center justify-center w-full py-2 space-y-1 transition-colors ${activeTab === 'dashboard' ? 'text-blue-600' : 'text-slate-400'}`}
-          >
-            {APP_ICONS.Dashboard('w-6 h-6')}
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Home</span>
-          </button>
-          
           <button 
             onClick={() => onTabChange('items')}
             className={`flex flex-col items-center justify-center w-full py-2 space-y-1 transition-colors ${activeTab === 'items' ? 'text-blue-600' : 'text-slate-400'}`}

@@ -37,6 +37,35 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
     saveAppSettings(newSettings);
   };
 
+  const sendTestNotification = async () => {
+    if (!settings.notificationsEnabled) {
+      alert('Please enable notifications toggle first.');
+      return;
+    }
+    
+    if (Notification.permission !== 'granted') {
+      const granted = await requestNotificationPermission();
+      if (!granted) return;
+    }
+
+    const title = 'Test Alert 🔔';
+    const options = {
+      body: 'This is a test notification from ExpiryReminder. Your alerts are working!',
+      icon: 'https://picsum.photos/192/192',
+      badge: 'https://picsum.photos/96/96',
+      tag: 'test-notification'
+    };
+
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        reg.showNotification(title, options);
+        return;
+      }
+    }
+    new Notification(title, options);
+  };
+
   const updateStorePref = (category: string, url: string) => {
     const newSettings = {
       ...settings,
@@ -107,7 +136,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
         <div className="flex items-center justify-between">
           <div>
             <h4 className="font-bold text-sm text-slate-700">Allow Alerts</h4>
-            <p className="text-[10px] text-slate-400">Status: {permissionStatus === 'granted' ? 'Enabled' : 'Restricted'}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+              Status: <span className={permissionStatus === 'granted' ? 'text-green-600' : 'text-rose-600'}>{permissionStatus}</span>
+            </p>
           </div>
           <button 
             onClick={() => handleToggle('notificationsEnabled')}
@@ -129,6 +160,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
             <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${settings.digestModeEnabled ? 'left-7' : 'left-1'}`} />
           </button>
         </div>
+
+        <button 
+          onClick={sendTestNotification}
+          className="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 uppercase tracking-widest active:bg-slate-100 transition-all"
+        >
+          Send Test Notification
+        </button>
       </section>
 
       {/* Store Preferences */}
@@ -137,7 +175,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
           <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
           Store Links
         </h3>
-        <p className="text-[10px] text-slate-400 mb-2 italic">Customize the base URL used for reordering items. The item name will be appended to this link.</p>
+        <p className="text-[10px] text-slate-400 mb-2 italic">Customize the search URL for each category.</p>
         
         <div className="space-y-4">
           {CATEGORIES.map(cat => (
@@ -147,7 +185,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
                 type="text" 
                 value={settings.categoryStorePreferences[cat] || ''}
                 onChange={(e) => updateStorePref(cat, e.target.value)}
-                placeholder="Paste search URL here (e.g. https://amazon.in/s?k=)"
+                placeholder="Paste search URL here..."
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               />
               <div className="flex flex-wrap gap-1.5 mt-1">

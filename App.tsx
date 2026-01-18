@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout.tsx';
-import Dashboard from './views/Dashboard.tsx';
 import Inventory from './views/Inventory.tsx';
 import AddEditItem from './views/AddEditItem.tsx';
 import SettingsView from './views/SettingsView.tsx';
@@ -8,10 +7,10 @@ import { getItems } from './services/storageService.ts';
 import { checkAndNotify } from './services/notificationService.ts';
 import { Item } from './types.ts';
 
-type ViewState = 'dashboard' | 'items' | 'add' | 'settings' | 'edit';
+type ViewState = 'items' | 'add' | 'settings' | 'edit';
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewState>('items');
   const [items, setItems] = useState<Item[]>([]);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
@@ -56,18 +55,16 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard':
-        return <Dashboard items={items} onNavigate={(view: any) => setCurrentView(view)} />;
       case 'items':
         return <Inventory items={items} onEdit={handleEdit} onRefresh={refreshItems} />;
       case 'add':
-        return <AddEditItem onSave={handleBackToItems} onCancel={() => setCurrentView('dashboard')} />;
+        return <AddEditItem onSave={handleBackToItems} onCancel={() => setCurrentView('items')} />;
       case 'edit':
         return <AddEditItem item={editingItem || undefined} onSave={handleBackToItems} onCancel={handleBackToItems} />;
       case 'settings':
         return <SettingsView onRefresh={refreshItems} />;
       default:
-        return <Dashboard items={items} onNavigate={(view: any) => setCurrentView(view)} />;
+        return <Inventory items={items} onEdit={handleEdit} onRefresh={refreshItems} />;
     }
   };
 
