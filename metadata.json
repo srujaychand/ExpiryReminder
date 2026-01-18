@@ -1,0 +1,7 @@
+{
+  "name": "ExpiryReminder",
+  "description": "A smart PWA to manage item expiries with automated alerts and affiliate reorder suggestions, optimized for mobile use.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
