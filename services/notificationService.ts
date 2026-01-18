@@ -1,6 +1,6 @@
 
-import { getItems, getAppSettings, getExpiryStatus, updateItem } from './storageService';
-import { ExpiryStatus } from '../types';
+import { getItems, getAppSettings, getExpiryStatus, updateItem } from './storageService.ts';
+import { ExpiryStatus } from '../types.ts';
 
 export const requestNotificationPermission = async (): Promise<boolean> => {
   if (!('Notification' in window)) {
@@ -11,60 +11,60 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return permission === 'granted';
 };
 
+export const triggerManualNotification = async (title: string, body: string) => {
+  const swReg = await navigator.serviceWorker.ready.catch(() => null);
+  const options = {
+    body,
+    icon: 'https://picsum.photos/128/128',
+    badge: 'https://picsum.photos/96/96',
+    vibrate: [200, 100, 200],
+    tag: 'test-notification',
+  };
+
+  if (swReg) {
+    await swReg.showNotification(title, options);
+  } else {
+    new Notification(title, options);
+  }
+};
+
 export const checkAndNotify = async () => {
   const settings = getAppSettings();
   if (!settings.notificationsEnabled) return;
   if (Notification.permission !== 'granted') return;
 
   const items = getItems();
-  
-  // Use Service Worker registration for more reliable mobile notifications
   const swReg = await navigator.serviceWorker.ready.catch(() => null);
 
   for (const item of items) {
     const currentStatus = getExpiryStatus(item);
     
-    // Only notify if the status has changed to something urgent
-    if (item.lastNotifiedStatus !== currentStatus) {
-      if (currentStatus === ExpiryStatus.Soon) {
-        const title = 'Expiring Soon! ⏳';
-        const options = {
-          body: `${item.name} is expiring soon. Tap to reorder.`,
-          icon: 'https://picsum.photos/128/128',
-          badge: 'https://picsum.photos/96/96',
-          vibrate: [200, 100, 200],
-          tag: `expiry-${item.id}`, // Prevents duplicate notifications for the same item
-          data: { url: '/#/items' }
-        };
+    // Only notify if status changed and it's not 'Active'
+    if (item.lastNotifiedStatus !== currentStatus && currentStatus !== ExpiryStatus.Active) {
+      const isSoon = currentStatus === ExpiryStatus.Soon;
+      const title = isSoon ? 'Expiring Soon! ⏳' : 'Item Expired! 🚨';
+      const body = isSoon 
+        ? `${item.name} is expiring soon. Tap to reorder.` 
+        : `${item.name} has expired. Buy a fresh one now.`;
 
-        if (swReg) {
-          swReg.showNotification(title, options);
-        } else {
-          new Notification(title, options);
-        }
+      const options = {
+        body,
+        icon: 'https://picsum.photos/128/128',
+        badge: 'https://picsum.photos/96/96',
+        vibrate: isSoon ? [200, 100, 200] : [500, 100, 500],
+        tag: `expiry-alert-${item.id}`,
+        data: { url: '/#/items' }
+      };
 
-        item.lastNotifiedStatus = currentStatus;
-        updateItem(item);
-      } else if (currentStatus === ExpiryStatus.Expired) {
-        const title = 'Item Expired! 🚨';
-        const options = {
-          body: `${item.name} has expired. Buy a fresh one now.`,
-          icon: 'https://picsum.photos/128/128',
-          badge: 'https://picsum.photos/96/96',
-          vibrate: [500, 100, 500],
-          tag: `expired-${item.id}`,
-          data: { url: '/#/items' }
-        };
-
-        if (swReg) {
-          swReg.showNotification(title, options);
-        } else {
-          new Notification(title, options);
-        }
-
-        item.lastNotifiedStatus = currentStatus;
-        updateItem(item);
+      if (swReg) {
+        await swReg.showNotification(title, options);
+      } else {
+        new Notification(title, options);
       }
+
+      // Record that we notified for this specific status
+      item.lastNotifiedStatus = currentStatus;
+      updateItem(item);
     }
   }
 };

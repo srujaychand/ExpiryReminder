@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { getAppSettings, saveAppSettings, getItems, saveItems } from '../services/storageService.ts';
-import { requestNotificationPermission } from '../services/notificationService.ts';
+import { requestNotificationPermission, triggerManualNotification } from '../services/notificationService.ts';
 import { AppSettings } from '../types.ts';
 
 interface SettingsViewProps {
@@ -10,6 +11,7 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
   const [settings, setSettings] = useState<AppSettings>(getAppSettings());
   const [message, setMessage] = useState('');
+  const [isTesting, setIsTesting] = useState(false);
 
   const handleToggleNotifications = async () => {
     if (!settings.notificationsEnabled) {
@@ -22,6 +24,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
     const newSettings = { ...settings, notificationsEnabled: !settings.notificationsEnabled };
     setSettings(newSettings);
     saveAppSettings(newSettings);
+  };
+
+  const handleTestNotification = async () => {
+    if (Notification.permission !== 'granted') {
+      alert('Please enable notifications first.');
+      return;
+    }
+    setIsTesting(true);
+    setMessage('Sending test alert...');
+    
+    // Give user 2 seconds to minimize the app if they want to test background behavior
+    setTimeout(async () => {
+      await triggerManualNotification(
+        'Test Alert! 🔔', 
+        'If you see this, ExpiryReminder notifications are working perfectly on your device.'
+      );
+      setMessage('Test alert sent!');
+      setIsTesting(false);
+      setTimeout(() => setMessage(''), 3000);
+    }, 2000);
   };
 
   const exportData = () => {
@@ -76,6 +98,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
           </button>
         </div>
 
+        {settings.notificationsEnabled && (
+          <button
+            onClick={handleTestNotification}
+            disabled={isTesting}
+            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-colors flex items-center justify-center space-x-2"
+          >
+            <svg className={`w-4 h-4 ${isTesting ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span>{isTesting ? 'Sending...' : 'Send Test Notification'}</span>
+          </button>
+        )}
+
         <div className="pt-4 border-t border-slate-100">
           <label className="block text-sm font-bold text-slate-700 mb-2">Default Reorder Link</label>
           <input 
@@ -119,7 +154,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
       </section>
 
       <section className="text-center pb-8">
-        <p className="text-xs text-slate-400">Version 1.0.0 (BETA)</p>
+        <p className="text-xs text-slate-400">Version 1.0.1 (BETA)</p>
         <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Made for India with ❤️</p>
       </section>
     </div>
