@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'expiry-app-v1';
+const CACHE_NAME = 'expiry-app-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -7,6 +6,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -14,34 +14,24 @@ self.addEventListener('install', (event) => {
   );
 });
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((fetchResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          if (event.request.url.includes('fonts.googleapis.com') || event.request.url.includes('picsum.photos')) {
-             cache.put(event.request, fetchResponse.clone());
-          }
-          return fetchResponse;
-        });
-      });
-    }).catch(() => {})
+      return response || fetch(event.request);
+    })
   );
 });
 
-// Handle notification clicks on mobile
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       if (clientList.length > 0) {
-        let client = clientList[0];
-        for (let i = 0; i < clientList.length; i++) {
-          if (clientList[i].focused) {
-            client = clientList[i];
-          }
-        }
-        return client.focus();
+        return clientList[0].focus();
       }
       return clients.openWindow('/');
     })
