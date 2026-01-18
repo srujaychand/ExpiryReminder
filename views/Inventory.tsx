@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Item, ExpiryStatus } from '../types.ts';
-import { getExpiryStatus, deleteItem } from '../services/storageService.ts';
+import { getExpiryStatus, deleteItem, snoozeItem, getReorderLink } from '../services/storageService.ts';
 import StatusBadge from '../components/StatusBadge.tsx';
 import { APP_ICONS } from '../constants.tsx';
 
@@ -22,14 +23,18 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
   });
 
   const handleDelete = (id: string) => {
-    // Basic confirmation - handles cases where window.confirm might be restricted in some previewers
-    const confirmed = window.confirm('Are you sure you want to remove this item?');
-    if (confirmed) {
+    if (window.confirm('Are you sure you want to remove this item?')) {
       deleteItem(id);
-      // Immediate refresh for UI feedback
       onRefresh();
-      // Secondary refresh to catch any storage lag
-      setTimeout(onRefresh, 100);
+    }
+  };
+
+  const handleSnooze = (id: string) => {
+    const days = window.prompt('Snooze alerts for how many days? (1, 3, or 7)', '3');
+    if (days && !isNaN(Number(days))) {
+      snoozeItem(id, Number(days));
+      onRefresh();
+      alert(`Alerts snoozed for ${days} days.`);
     }
   };
 
@@ -70,6 +75,8 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
         {filteredItems.length > 0 ? (
           filteredItems.map(item => {
             const status = getExpiryStatus(item);
+            const isSnoozed = item.snoozedUntil && new Date(item.snoozedUntil) > new Date();
+
             return (
               <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden active:bg-slate-50 transition-colors">
                 <div className="p-4 flex justify-between items-start">
@@ -77,28 +84,29 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
                     <div className="flex items-center flex-wrap gap-2 mb-2">
                       <h3 className="font-bold text-slate-800 text-base leading-tight">{item.name}</h3>
                       <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase font-bold tracking-tight">{item.category}</span>
+                      {isSnoozed && (
+                        <span className="text-[10px] bg-slate-800 text-white px-2 py-0.5 rounded flex items-center space-x-1">
+                          {APP_ICONS.Clock('w-3 h-3')}
+                          <span>Snoozed</span>
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2 mb-2">
                       <StatusBadge status={status} />
                       <span className="text-[11px] text-slate-400 font-medium">Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}</span>
                     </div>
-                    {item.notes && <p className="text-xs text-slate-500 italic border-l-2 border-slate-200 pl-2 py-1 mt-2">"{item.notes}"</p>}
                   </div>
                   
                   <div className="flex flex-col space-y-1 ml-4">
                     <button 
                       onClick={() => onEdit(item)}
-                      className="p-2 text-slate-400 hover:text-blue-600 active:bg-blue-50 rounded-lg transition-colors"
-                      aria-label="Edit item"
+                      className="p-2 text-slate-400 hover:text-blue-600"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </button>
                     <button 
                       onClick={() => handleDelete(item.id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 active:bg-rose-50 rounded-lg transition-colors"
-                      aria-label="Delete item"
+                      className="p-2 text-slate-400 hover:text-rose-600"
                     >
                       {APP_ICONS.Trash('w-5 h-5')}
                     </button>
@@ -106,17 +114,21 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
                 </div>
                 
                 {status !== ExpiryStatus.Active && (
-                   <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+                   <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center">
+                      <button 
+                        onClick={() => handleSnooze(item.id)}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800"
+                      >
+                        Snooze
+                      </button>
                       <a 
-                        href={`https://www.amazon.in/s?k=${encodeURIComponent(item.name)}`} 
+                        href={getReorderLink(item)} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-[11px] font-black uppercase tracking-widest text-blue-600 flex items-center hover:underline active:opacity-70"
+                        className="text-[11px] font-black uppercase tracking-widest text-blue-600 flex items-center hover:underline"
                       >
                         {status === ExpiryStatus.Expired ? 'Buy Again' : 'Reorder Now'}
-                        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                       </a>
                    </div>
                 )}
@@ -125,11 +137,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
           })
         ) : (
           <div className="py-24 text-center">
-            <div className="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
-              {APP_ICONS.Items('w-10 h-10 text-slate-300')}
-            </div>
             <p className="text-slate-500 font-medium">No items found.</p>
-            <p className="text-xs text-slate-400 mt-1">Try a different filter or search term.</p>
           </div>
         )}
       </div>

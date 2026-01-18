@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Item, ExpiryStatus } from '../types.ts';
-import { getExpiryStatus } from '../services/storageService.ts';
+import { getExpiryStatus, getReorderLink } from '../services/storageService.ts';
 import StatusBadge from '../components/StatusBadge.tsx';
 
 interface DashboardProps {
@@ -9,6 +10,16 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ items, onNavigate }) => {
+  const today = new Date().toLocaleDateString();
+  
+  const expiringToday = items.filter(i => 
+    new Date(i.expiryDate).toLocaleDateString() === today
+  );
+
+  const reorderSoon = items.filter(i => 
+    getExpiryStatus(i) === ExpiryStatus.Soon
+  );
+
   const statusCounts = items.reduce((acc, item) => {
     const status = getExpiryStatus(item);
     acc[status] = (acc[status] || 0) + 1;
@@ -22,6 +33,30 @@ const Dashboard: React.FC<DashboardProps> = ({ items, onNavigate }) => {
 
   return (
     <div className="space-y-6">
+      {/* PWA Widgets */}
+      <section className="grid grid-cols-2 gap-4">
+        <div 
+          onClick={() => onNavigate('items')}
+          className="bg-rose-600 p-4 rounded-3xl shadow-lg shadow-rose-200 text-white active:scale-95 transition-all cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl font-black">{expiringToday.length}</span>
+            <svg className="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Expiring Today</p>
+        </div>
+        <div 
+          onClick={() => onNavigate('items')}
+          className="bg-blue-600 p-4 rounded-3xl shadow-lg shadow-blue-200 text-white active:scale-95 transition-all cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl font-black">{reorderSoon.length}</span>
+            <svg className="w-6 h-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Needs Reorder</p>
+        </div>
+      </section>
+
       <section>
         <h2 className="text-lg font-bold text-slate-700 mb-3">Overview</h2>
         <div className="grid grid-cols-3 gap-3">
@@ -65,7 +100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items, onNavigate }) => {
                     </div>
                   </div>
                   <a 
-                    href={`https://www.amazon.in/s?k=${encodeURIComponent(item.name)}`} 
+                    href={getReorderLink(item)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className={`px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-transform active:scale-95 ${status === ExpiryStatus.Expired ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'}`}
@@ -81,23 +116,6 @@ const Dashboard: React.FC<DashboardProps> = ({ items, onNavigate }) => {
             <p className="text-blue-700 font-medium">All clear! No items expiring soon.</p>
           </div>
         )}
-      </section>
-
-      <section className="bg-slate-800 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <h2 className="text-xl font-bold mb-2">Smart Reminders</h2>
-          <p className="text-slate-300 text-sm mb-4 leading-relaxed">
-            Never waste money on expired groceries or medicines again. 
-            Set reminders and reorder with one tap.
-          </p>
-          <button 
-            onClick={() => onNavigate('add')}
-            className="bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-white transition-colors"
-          >
-            Add First Item
-          </button>
-        </div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
       </section>
     </div>
   );

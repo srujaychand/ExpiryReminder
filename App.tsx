@@ -4,7 +4,7 @@ import Dashboard from './views/Dashboard.tsx';
 import Inventory from './views/Inventory.tsx';
 import AddEditItem from './views/AddEditItem.tsx';
 import SettingsView from './views/SettingsView.tsx';
-import { getItems, saveItems } from './services/storageService.ts';
+import { getItems } from './services/storageService.ts';
 import { checkAndNotify } from './services/notificationService.ts';
 import { Item } from './types.ts';
 
@@ -22,11 +22,23 @@ const App: React.FC = () => {
 
   useEffect(() => {
     refreshItems();
-    checkAndNotify();
     
+    // Run notification check after 1s delay to ensure PWA/SW services are ready
+    const timer = setTimeout(() => {
+      checkAndNotify().then(() => {
+        // Refresh items after notification check because checkAndNotify 
+        // updates lastNotifiedStatus in storage.
+        refreshItems();
+      });
+    }, 1000);
+
     // Check for notifications every hour
     const interval = setInterval(checkAndNotify, 3600000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleEdit = (item: Item) => {
@@ -38,6 +50,8 @@ const App: React.FC = () => {
     setEditingItem(null);
     setCurrentView('items');
     refreshItems();
+    // Re-check notifications immediately after a change
+    checkAndNotify();
   };
 
   const renderView = () => {

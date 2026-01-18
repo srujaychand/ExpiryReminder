@@ -18,7 +18,6 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     notes: '',
   });
 
-  // reminderInput state allows users to type freely, including clearing the field
   const [reminderInput, setReminderInput] = useState<string>('7');
 
   useEffect(() => {
@@ -32,8 +31,8 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
   }, [item]);
 
   const handleReminderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow any numeric string or empty string
     const val = e.target.value;
+    // Allow empty string or numbers only
     if (val === '' || /^\d+$/.test(val)) {
       setReminderInput(val);
     }
@@ -42,7 +41,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Convert input to number on submit, default to 0 if empty
+    // Default to 0 if input is empty
     const finalReminderDays = reminderInput === '' ? 0 : parseInt(reminderInput, 10);
 
     if (!formData.name || !formData.expiryDate) {
@@ -72,8 +71,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
       reminderDays: finalReminderDays,
       notes: formData.notes,
       createdAt: item?.createdAt || new Date().toISOString(),
-      // CRITICAL: Reset lastNotifiedStatus on any save/edit to ensure 
-      // the notification engine re-evaluates this item immediately.
+      // Resetting this ensures the notification logic re-checks this item immediately
       lastNotifiedStatus: undefined, 
     };
 

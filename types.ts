@@ -21,10 +21,13 @@ export interface Item {
   reminderDays: number;
   notes?: string;
   lastNotifiedStatus?: ExpiryStatus;
+  snoozedUntil?: string; // ISO format
   createdAt: string;
 }
 
 export interface AppSettings {
   notificationsEnabled: boolean;
+  digestModeEnabled: boolean;
   affiliateLinkBase: string;
+  categoryStorePreferences: Record<string, string>;
 }

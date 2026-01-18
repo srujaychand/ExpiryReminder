@@ -1,75 +1,85 @@
-import { getItems, getAppSettings, getExpiryStatus, updateItem } from './storageService.ts';
-import { ExpiryStatus } from '../types.ts';
 
-/**
- * Requests permission for browser notifications.
- */
+import { getItems, getAppSettings, getExpiryStatus, updateItem } from './storageService.ts';
+import { ExpiryStatus, Item } from '../types.ts';
+
 export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!('Notification' in window)) {
-    console.warn('Notifications not supported in this browser.');
-    return false;
-  }
+  if (!('Notification' in window)) return false;
   const permission = await Notification.requestPermission();
   return permission === 'granted';
 };
 
-/**
- * Iterates through items and triggers notifications for new status changes (Expired or Soon).
- */
+const shouldNotifyItem = (item: Item): boolean => {
+  const now = new Date();
+  // Check if snoozed
+  if (item.snoozedUntil && new Date(item.snoozedUntil) > now) {
+    return false;
+  }
+  
+  const currentStatus = getExpiryStatus(item);
+  // Notify if status has changed and it's something urgent
+  return (currentStatus === ExpiryStatus.Soon || currentStatus === ExpiryStatus.Expired) &&
+         item.lastNotifiedStatus !== currentStatus;
+};
+
 export const checkAndNotify = async () => {
   const settings = getAppSettings();
   if (!settings.notificationsEnabled) return;
-  
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
-  }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const items = getItems();
-  let reg: ServiceWorkerRegistration | null = null;
+  const itemsToNotify = items.filter(shouldNotifyItem);
   
+  if (itemsToNotify.length === 0) return;
+
+  let reg: ServiceWorkerRegistration | null = null;
   if ('serviceWorker' in navigator) {
     reg = await navigator.serviceWorker.getRegistration();
   }
 
-  for (const item of items) {
-    const currentStatus = getExpiryStatus(item);
+  // Handle Digest Mode
+  if (settings.digestModeEnabled && itemsToNotify.length > 0) {
+    const title = 'Expiry Daily Digest 📋';
+    const soonCount = itemsToNotify.filter(i => getExpiryStatus(i) === ExpiryStatus.Soon).length;
+    const expiredCount = itemsToNotify.filter(i => getExpiryStatus(i) === ExpiryStatus.Expired).length;
     
-    // Check if we should notify:
-    // 1. Current status is Soon or Expired
-    // 2. We haven't notified for this specific current status yet
-    const shouldNotify = (currentStatus === ExpiryStatus.Soon || currentStatus === ExpiryStatus.Expired) &&
-                        item.lastNotifiedStatus !== currentStatus;
+    let body = '';
+    if (soonCount > 0) body += `${soonCount} items expiring soon. `;
+    if (expiredCount > 0) body += `${expiredCount} items expired.`;
 
-    if (shouldNotify) {
-      const isSoon = currentStatus === ExpiryStatus.Soon;
-      const title = isSoon ? 'Expiring Soon! ⏳' : 'Item Expired! 🚨';
-      const body = isSoon 
-        ? `${item.name} is expiring soon. Tap to view.` 
-        : `${item.name} has expired. Tap to reorder.`;
+    const options = {
+      body,
+      icon: 'https://picsum.photos/192/192',
+      tag: 'expiry-digest',
+      data: { url: '/#/items' }
+    };
 
-      const options = {
-        body,
-        icon: 'https://picsum.photos/192/192',
-        badge: 'https://picsum.photos/96/96',
-        vibrate: isSoon ? [200, 100, 200] : [500, 100, 500],
-        tag: `expiry-alert-${item.id}`, // Tag prevents duplicate notifications for the same item
-        data: { url: '/#/items' },
-        requireInteraction: true
-      };
+    if (reg) await reg.showNotification(title, options);
+    else new Notification(title, options);
 
-      try {
-        if (reg && reg.showNotification) {
-          await reg.showNotification(title, options);
-        } else {
-          new Notification(title, options);
-        }
-        
-        // Persist the notified status so we don't repeat this alert
-        const updatedItem = { ...item, lastNotifiedStatus: currentStatus };
-        updateItem(updatedItem);
-      } catch (e) {
-        console.error('Failed to show notification', e);
-      }
-    }
+    // Update notified status for all items in digest
+    itemsToNotify.forEach(item => {
+      const updated = { ...item, lastNotifiedStatus: getExpiryStatus(item) };
+      updateItem(updated);
+    });
+    return;
+  }
+
+  // Individual Notifications
+  for (const item of itemsToNotify) {
+    const status = getExpiryStatus(item);
+    const title = status === ExpiryStatus.Soon ? 'Expiring Soon! ⏳' : 'Item Expired! 🚨';
+    const body = `${item.name} is ${status.toLowerCase()}. Tap to manage.`;
+
+    const options = {
+      body,
+      icon: 'https://picsum.photos/192/192',
+      tag: `item-${item.id}`,
+      data: { url: '/#/items' }
+    };
+
+    if (reg) await reg.showNotification(title, options);
+    else new Notification(title, options);
+
+    updateItem({ ...item, lastNotifiedStatus: status });
   }
 };

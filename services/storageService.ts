@@ -39,12 +39,25 @@ export const deleteItem = (id: string): void => {
   saveItems(filtered);
 };
 
+export const snoozeItem = (id: string, days: number): void => {
+  const items = getItems();
+  const index = items.findIndex(i => i.id === id);
+  if (index !== -1) {
+    const snoozeDate = new Date();
+    snoozeDate.setDate(snoozeDate.getDate() + days);
+    items[index].snoozedUntil = snoozeDate.toISOString();
+    saveItems(items);
+  }
+};
+
 export const getAppSettings = (): AppSettings => {
   const data = localStorage.getItem(SETTINGS_KEY);
   if (!data) {
     const defaultSettings: AppSettings = {
       notificationsEnabled: false,
-      affiliateLinkBase: 'https://www.amazon.in/s?k='
+      digestModeEnabled: false,
+      affiliateLinkBase: 'https://www.amazon.in/s?k=',
+      categoryStorePreferences: {}
     };
     saveAppSettings(defaultSettings);
     return defaultSettings;
@@ -54,6 +67,13 @@ export const getAppSettings = (): AppSettings => {
 
 export const saveAppSettings = (settings: AppSettings): void => {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+};
+
+export const getReorderLink = (item: Item): string => {
+  const settings = getAppSettings();
+  const preferredStore = settings.categoryStorePreferences[item.category];
+  const baseUrl = preferredStore || settings.affiliateLinkBase;
+  return `${baseUrl}${encodeURIComponent(item.name)}`;
 };
 
 export const getExpiryStatus = (item: Item): ExpiryStatus => {
