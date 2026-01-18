@@ -10,7 +10,12 @@ export const getItems = (): Item[] => {
     saveItems(SAMPLE_DATA);
     return SAMPLE_DATA;
   }
-  return JSON.parse(data);
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    console.error("Failed to parse items", e);
+    return SAMPLE_DATA;
+  }
 };
 
 export const saveItems = (items: Item[]): void => {
@@ -50,18 +55,27 @@ export const snoozeItem = (id: string, days: number): void => {
 };
 
 export const getAppSettings = (): AppSettings => {
+  const defaultSettings: AppSettings = {
+    notificationsEnabled: false,
+    digestModeEnabled: false,
+    affiliateLinkBase: 'https://www.amazon.in/s?k=',
+    categoryStorePreferences: {}
+  };
+
   const data = localStorage.getItem(SETTINGS_KEY);
   if (!data) {
-    const defaultSettings: AppSettings = {
-      notificationsEnabled: false,
-      digestModeEnabled: false,
-      affiliateLinkBase: 'https://www.amazon.in/s?k=',
-      categoryStorePreferences: {}
-    };
     saveAppSettings(defaultSettings);
     return defaultSettings;
   }
-  return JSON.parse(data);
+
+  try {
+    const parsed = JSON.parse(data);
+    // Defensive merge: ensures new properties exist even if loading old data
+    return { ...defaultSettings, ...parsed };
+  } catch (e) {
+    console.error("Failed to parse settings", e);
+    return defaultSettings;
+  }
 };
 
 export const saveAppSettings = (settings: AppSettings): void => {
@@ -70,8 +84,8 @@ export const saveAppSettings = (settings: AppSettings): void => {
 
 export const getReorderLink = (item: Item): string => {
   const settings = getAppSettings();
-  const preferredStore = settings.categoryStorePreferences[item.category];
-  const baseUrl = preferredStore || settings.affiliateLinkBase;
+  const preferredStore = settings.categoryStorePreferences?.[item.category];
+  const baseUrl = preferredStore || settings.affiliateLinkBase || 'https://www.amazon.in/s?k=';
   return `${baseUrl}${encodeURIComponent(item.name)}`;
 };
 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,13 +15,14 @@
           font-family: 'Inter', sans-serif; 
           -webkit-tap-highlight-color: transparent;
           overscroll-behavior-y: none;
+          background-color: #f8fafc;
         }
-        /* Extra padding for devices with notches/bottom bars */
         .pb-safe {
           padding-bottom: env(safe-area-inset-bottom);
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        #root { min-height: 100vh; display: flex; flex-direction: column; }
     </style>
 <script type="importmap">
 {

@@ -1,17 +1,21 @@
 
-export enum Category {
-  Grocery = 'Grocery',
-  Medicine = 'Medicine',
-  Cosmetics = 'Cosmetics',
-  Electronics = 'Electronics',
-  Others = 'Others'
-}
+export const Category = {
+  Grocery: 'Grocery',
+  Medicine: 'Medicine',
+  Cosmetics: 'Cosmetics',
+  Electronics: 'Electronics',
+  Others: 'Others'
+} as const;
 
-export enum ExpiryStatus {
-  Active = 'Active',
-  Soon = 'Expiring Soon',
-  Expired = 'Expired'
-}
+export type Category = typeof Category[keyof typeof Category];
+
+export const ExpiryStatus = {
+  Active: 'Active',
+  Soon: 'Expiring Soon',
+  Expired: 'Expired'
+} as const;
+
+export type ExpiryStatus = typeof ExpiryStatus[keyof typeof ExpiryStatus];
 
 export interface Item {
   id: string;

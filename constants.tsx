@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Category, Item, ExpiryStatus } from './types.ts';
+import { Category, ExpiryStatus } from './types.ts';
 
 export const CATEGORIES = [
   Category.Grocery,
@@ -20,7 +21,6 @@ export const STORE_OPTIONS: Record<string, { name: string, url: string }[]> = {
     { name: 'PharmEasy', url: 'https://pharmeasy.in/search/all?searchtext=' },
     { name: 'Apollo', url: 'https://www.apollopharmacy.in/search-medicines/' }
   ],
-  // Fallbacks for others
   'Default': [
     { name: 'Amazon', url: 'https://www.amazon.in/s?k=' },
     { name: 'Google Shopping', url: 'https://www.google.com/search?tbm=shop&q=' }
@@ -43,7 +43,7 @@ lastMonth.setDate(today.getDate() - 10);
 const farFuture = new Date();
 farFuture.setFullYear(today.getFullYear() + 1);
 
-export const SAMPLE_DATA: Item[] = [
+export const SAMPLE_DATA = [
   {
     id: '1',
     name: 'Paracetamol 500mg',

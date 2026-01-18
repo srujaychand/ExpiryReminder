@@ -1,4 +1,5 @@
-const CACHE_NAME = 'expiry-app-v2';
+
+const CACHE_NAME = 'expiry-app-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -15,13 +16,27 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+      return response || fetch(event.request).catch(() => {
+        return caches.match('/');
+      });
     })
   );
 });
