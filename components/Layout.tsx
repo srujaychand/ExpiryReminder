@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { APP_ICONS } from '../constants.tsx';
 
@@ -16,15 +15,15 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
         <h1 className="text-xl font-bold tracking-tight">ExpiryReminder</h1>
       </header>
 
-      {/* Main content with padding-top to clear the 64px (h-16) header */}
-      <main className="flex-1 pb-32 pt-16">
-        <div className="px-4">
+      {/* Main content padding adjusted for both header and nav height + safe areas */}
+      <main className="flex-1 pt-16" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+        <div className="px-4 py-4">
           {children}
         </div>
       </main>
 
-      {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] safe-bottom">
+      {/* Bottom navigation with safe area support */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom)]">
         <div className="flex justify-around items-center h-16">
           <button 
             onClick={() => onTabChange('dashboard')}
@@ -44,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => 
           
           <button 
             onClick={() => onTabChange('add')}
-            className={`flex flex-col items-center justify-center -mt-8 bg-blue-600 text-white rounded-full w-14 h-14 shadow-xl active:scale-90 transition-all border-4 border-slate-50`}
+            className={`flex flex-col items-center justify-center -mt-8 bg-blue-600 text-white rounded-full w-14 h-14 shadow-xl active:scale-90 transition-all border-4 border-slate-50 relative z-10`}
           >
             {APP_ICONS.Add('w-8 h-8')}
           </button>
