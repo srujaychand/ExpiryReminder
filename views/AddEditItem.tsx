@@ -18,17 +18,23 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     notes: '',
   });
 
+  // Local state for the number input to allow empty string while typing
+  const [reminderInput, setReminderInput] = useState<string>('7');
+
   useEffect(() => {
     if (item) {
       setFormData({
         ...item,
         expiryDate: item.expiryDate.split('T')[0],
       });
+      setReminderInput(item.reminderDays.toString());
     }
   }, [item]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalReminderDays = parseInt(reminderInput) || 0;
+
     if (!formData.name || !formData.expiryDate) {
       alert('Please fill in required fields');
       return;
@@ -37,8 +43,6 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     const currentItems = getItems();
     const newExpiryIso = new Date(formData.expiryDate!).toISOString();
 
-    // Duplicate Check: Check if an item with same name and same expiry exists
-    // Only check for new items or if the name/expiry changed on an existing item
     const isDuplicate = currentItems.some(existingItem => 
       existingItem.id !== item?.id && 
       existingItem.name.trim().toLowerCase() === formData.name?.trim().toLowerCase() &&
@@ -55,7 +59,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
       name: formData.name!.trim(),
       category: formData.category as Category,
       expiryDate: newExpiryIso,
-      reminderDays: Number(formData.reminderDays),
+      reminderDays: finalReminderDays,
       notes: formData.notes,
       createdAt: item?.createdAt || new Date().toISOString(),
     };
@@ -123,10 +127,11 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
             <label className="block text-sm font-bold text-slate-700 mb-1.5">Alert Days</label>
             <input 
               type="number" 
-              min="1"
+              min="0"
               max="365"
-              value={formData.reminderDays}
-              onChange={(e) => setFormData({...formData, reminderDays: parseInt(e.target.value) || 7})}
+              value={reminderInput}
+              onChange={(e) => setReminderInput(e.target.value)}
+              placeholder="0"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-base"
             />
           </div>

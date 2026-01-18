@@ -22,9 +22,14 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
   });
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to remove this item?')) {
+    // We use a confirm but handle the actual deletion and refresh explicitly
+    const confirmed = window.confirm('Are you sure you want to remove this item?');
+    if (confirmed) {
       deleteItem(id);
-      onRefresh();
+      // Wait a tiny bit to ensure localStorage is written before refreshing state
+      setTimeout(() => {
+        onRefresh();
+      }, 50);
     }
   };
 
