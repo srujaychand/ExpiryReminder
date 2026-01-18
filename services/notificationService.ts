@@ -20,7 +20,7 @@ export const checkAndNotify = async () => {
   const settings = getAppSettings();
   if (!settings.notificationsEnabled) return;
   
-  if (Notification.permission !== 'granted') {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
   }
 
@@ -34,8 +34,13 @@ export const checkAndNotify = async () => {
   for (const item of items) {
     const currentStatus = getExpiryStatus(item);
     
-    // Only notify if status is not 'Active' and it's a new status change for this item
-    if (item.lastNotifiedStatus !== currentStatus && currentStatus !== ExpiryStatus.Active) {
+    // Check if we should notify:
+    // 1. Current status is Soon or Expired
+    // 2. We haven't notified for this specific current status yet
+    const shouldNotify = (currentStatus === ExpiryStatus.Soon || currentStatus === ExpiryStatus.Expired) &&
+                        item.lastNotifiedStatus !== currentStatus;
+
+    if (shouldNotify) {
       const isSoon = currentStatus === ExpiryStatus.Soon;
       const title = isSoon ? 'Expiring Soon! ⏳' : 'Item Expired! 🚨';
       const body = isSoon 
@@ -47,7 +52,7 @@ export const checkAndNotify = async () => {
         icon: 'https://picsum.photos/192/192',
         badge: 'https://picsum.photos/96/96',
         vibrate: isSoon ? [200, 100, 200] : [500, 100, 500],
-        tag: `expiry-alert-${item.id}`,
+        tag: `expiry-alert-${item.id}`, // Tag prevents duplicate notifications for the same item
         data: { url: '/#/items' },
         requireInteraction: true
       };
@@ -58,13 +63,13 @@ export const checkAndNotify = async () => {
         } else {
           new Notification(title, options);
         }
+        
+        // Persist the notified status so we don't repeat this alert
+        const updatedItem = { ...item, lastNotifiedStatus: currentStatus };
+        updateItem(updatedItem);
       } catch (e) {
         console.error('Failed to show notification', e);
       }
-
-      // Persist the notified status so we don't spam the user
-      item.lastNotifiedStatus = currentStatus;
-      updateItem(item);
     }
   }
 };

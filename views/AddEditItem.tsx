@@ -18,7 +18,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     notes: '',
   });
 
-  // Local state for the number input to allow empty string while typing
+  // reminderInput state allows users to type freely, including clearing the field
   const [reminderInput, setReminderInput] = useState<string>('7');
 
   useEffect(() => {
@@ -31,9 +31,19 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     }
   }, [item]);
 
+  const handleReminderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow any numeric string or empty string
+    const val = e.target.value;
+    if (val === '' || /^\d+$/.test(val)) {
+      setReminderInput(val);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalReminderDays = parseInt(reminderInput) || 0;
+    
+    // Convert input to number on submit, default to 0 if empty
+    const finalReminderDays = reminderInput === '' ? 0 : parseInt(reminderInput, 10);
 
     if (!formData.name || !formData.expiryDate) {
       alert('Please fill in required fields');
@@ -50,7 +60,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     );
 
     if (isDuplicate) {
-      const confirmSave = window.confirm(`An item named "${formData.name}" with the same expiry date already exists. Do you want to add it anyway?`);
+      const confirmSave = window.confirm(`An item named "${formData.name}" with the same expiry date already exists. Save anyway?`);
       if (!confirmSave) return;
     }
 
@@ -62,6 +72,9 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
       reminderDays: finalReminderDays,
       notes: formData.notes,
       createdAt: item?.createdAt || new Date().toISOString(),
+      // CRITICAL: Reset lastNotifiedStatus on any save/edit to ensure 
+      // the notification engine re-evaluates this item immediately.
+      lastNotifiedStatus: undefined, 
     };
 
     if (item) {
@@ -76,7 +89,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 max-w-lg mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800">{item ? 'Edit Item' : 'New Item'}</h2>
-        <button onClick={onCancel} className="text-slate-400 p-2">
+        <button onClick={onCancel} className="text-slate-400 p-2 active:scale-90 transition-transform">
            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -126,12 +139,11 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1.5">Alert Days</label>
             <input 
-              type="number" 
-              min="0"
-              max="365"
+              type="text" 
+              inputMode="numeric"
               value={reminderInput}
-              onChange={(e) => setReminderInput(e.target.value)}
-              placeholder="0"
+              onChange={handleReminderChange}
+              placeholder="e.g. 7"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-base"
             />
           </div>
