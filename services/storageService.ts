@@ -1,6 +1,5 @@
-
-import { Item, AppSettings, ExpiryStatus } from '../types';
-import { SAMPLE_DATA } from '../constants';
+import { Item, AppSettings, ExpiryStatus } from '../types.ts';
+import { SAMPLE_DATA } from '../constants.tsx';
 
 const STORAGE_KEY = 'expiry_app_items';
 const SETTINGS_KEY = 'expiry_app_settings';

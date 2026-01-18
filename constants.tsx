@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Category, Item, ExpiryStatus } from './types';
+import { Category, Item, ExpiryStatus } from './types.ts';
 
 export const CATEGORIES = [
   Category.Grocery,

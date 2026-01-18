@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ExpiryStatus } from '../types';
+import { ExpiryStatus } from '../types.ts';
 import { STATUS_COLORS } from '../constants.tsx';
 
 interface StatusBadgeProps {
