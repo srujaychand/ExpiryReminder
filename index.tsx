@@ -17,8 +17,9 @@ root.render(
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('SW registered'))
+    // Use absolute path for Service Worker
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered successfully with scope:', reg.scope))
       .catch((err) => {
         console.warn('PWA Service Worker registration skipped:', err.message);
       });
