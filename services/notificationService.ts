@@ -1,4 +1,3 @@
-
 import { getItems, getAppSettings, getExpiryStatus, updateItem } from './storageService.ts';
 import { ExpiryStatus } from '../types.ts';
 
@@ -12,7 +11,8 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 
 export const triggerManualNotification = async (title: string, body: string) => {
-  const swReg = await navigator.serviceWorker.ready.catch(() => null);
+  if (!('Notification' in window)) return;
+  
   const options = {
     body,
     icon: 'https://picsum.photos/128/128',
@@ -21,9 +21,15 @@ export const triggerManualNotification = async (title: string, body: string) => 
     tag: 'test-notification',
   };
 
-  if (swReg) {
-    await swReg.showNotification(title, options);
-  } else {
+  // Try showing through Service Worker first for better mobile support
+  try {
+    const swReg = await navigator.serviceWorker.ready;
+    if (swReg) {
+      await swReg.showNotification(title, options);
+    } else {
+      new Notification(title, options);
+    }
+  } catch (e) {
     new Notification(title, options);
   }
 };
@@ -34,7 +40,12 @@ export const checkAndNotify = async () => {
   if (Notification.permission !== 'granted') return;
 
   const items = getItems();
-  const swReg = await navigator.serviceWorker.ready.catch(() => null);
+  let swReg: ServiceWorkerRegistration | null = null;
+  try {
+    swReg = await navigator.serviceWorker.ready;
+  } catch (e) {
+    console.warn('Service worker not ready for background notifications');
+  }
 
   for (const item of items) {
     const currentStatus = getExpiryStatus(item);
@@ -57,12 +68,12 @@ export const checkAndNotify = async () => {
       };
 
       if (swReg) {
-        await swReg.showNotification(title, options);
+        swReg.showNotification(title, options);
       } else {
         new Notification(title, options);
       }
 
-      // Record that we notified for this specific status
+      // Record that we notified for this specific status to avoid spamming
       item.lastNotifiedStatus = currentStatus;
       updateItem(item);
     }

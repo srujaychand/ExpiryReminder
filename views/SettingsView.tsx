@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getAppSettings, saveAppSettings, getItems, saveItems } from '../services/storageService.ts';
 import { requestNotificationPermission, triggerManualNotification } from '../services/notificationService.ts';
@@ -10,14 +9,29 @@ interface SettingsViewProps {
 
 const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
   const [settings, setSettings] = useState<AppSettings>(getAppSettings());
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(
+    'Notification' in window ? Notification.permission : 'denied'
+  );
   const [message, setMessage] = useState('');
   const [isTesting, setIsTesting] = useState(false);
+
+  useEffect(() => {
+    // Check permission status on mount and when window gets focus
+    const checkPermission = () => {
+      if ('Notification' in window) {
+        setPermissionStatus(Notification.permission);
+      }
+    };
+    window.addEventListener('focus', checkPermission);
+    return () => window.removeEventListener('focus', checkPermission);
+  }, []);
 
   const handleToggleNotifications = async () => {
     if (!settings.notificationsEnabled) {
       const granted = await requestNotificationPermission();
+      setPermissionStatus(Notification.permission);
       if (!granted) {
-        alert('Notification permission denied. Please enable it in browser settings.');
+        alert('Notification permission denied. Please enable it in browser settings (click the lock icon in the URL bar).');
         return;
       }
     }
@@ -28,13 +42,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
 
   const handleTestNotification = async () => {
     if (Notification.permission !== 'granted') {
-      alert('Please enable notifications first.');
+      alert('Browser permission is not granted. Please toggle the "Alert Notifications" switch above or check your browser settings.');
       return;
     }
-    setIsTesting(true);
-    setMessage('Sending test alert...');
     
-    // Give user 2 seconds to minimize the app if they want to test background behavior
+    setIsTesting(true);
+    setMessage('Sending test alert in 2s...');
+    
+    // Give user 2 seconds to minimize the app
     setTimeout(async () => {
       await triggerManualNotification(
         'Test Alert! 🔔', 
@@ -87,8 +102,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
       <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-slate-800">Alert Notifications</h3>
-            <p className="text-xs text-slate-500">Get notified when items are about to expire</p>
+            <div className="flex items-center space-x-2">
+               <h3 className="font-bold text-slate-800">Alert Notifications</h3>
+               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                 permissionStatus === 'granted' ? 'bg-green-100 text-green-700' : 
+                 permissionStatus === 'denied' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'
+               }`}>
+                 {permissionStatus}
+               </span>
+            </div>
+            <p className="text-xs text-slate-500">Enable automated expiry alerts</p>
           </div>
           <button 
             onClick={handleToggleNotifications}
@@ -98,18 +121,25 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
           </button>
         </div>
 
-        {settings.notificationsEnabled && (
+        <div className="space-y-3">
           <button
             onClick={handleTestNotification}
             disabled={isTesting}
-            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-colors flex items-center justify-center space-x-2"
+            className={`w-full py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center space-x-2 ${
+              settings.notificationsEnabled 
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95' 
+                : 'bg-slate-50 text-slate-300 cursor-not-allowed opacity-60'
+            }`}
           >
             <svg className={`w-4 h-4 ${isTesting ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             <span>{isTesting ? 'Sending...' : 'Send Test Notification'}</span>
           </button>
-        )}
+          {!settings.notificationsEnabled && (
+            <p className="text-[10px] text-center text-slate-400 italic">Toggle switch to enable testing</p>
+          )}
+        </div>
 
         <div className="pt-4 border-t border-slate-100">
           <label className="block text-sm font-bold text-slate-700 mb-2">Default Reorder Link</label>
@@ -124,37 +154,27 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
             placeholder="e.g. https://www.amazon.in/s?k="
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
           />
-          <p className="text-[10px] text-slate-400 mt-2">Item name will be appended to this link for reordering.</p>
         </div>
       </section>
 
       <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
         <h3 className="font-bold text-slate-800 mb-4">Data Management</h3>
         <div className="grid grid-cols-2 gap-3">
-          <button 
-            onClick={exportData}
-            className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all"
-          >
-            <svg className="w-6 h-6 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+          <button onClick={exportData} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all">
+            <svg className="w-6 h-6 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             <span className="text-xs font-bold text-slate-700">Backup JSON</span>
           </button>
-          
           <label className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all cursor-pointer">
-            <svg className="w-6 h-6 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
+            <svg className="w-6 h-6 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
             <span className="text-xs font-bold text-slate-700">Restore JSON</span>
             <input type="file" accept=".json" onChange={importData} className="hidden" />
           </label>
         </div>
-        
         {message && <p className="mt-4 text-center text-sm font-bold text-blue-600">{message}</p>}
       </section>
 
       <section className="text-center pb-8">
-        <p className="text-xs text-slate-400">Version 1.0.1 (BETA)</p>
+        <p className="text-xs text-slate-400 font-medium">ExpiryReminder v1.0.2</p>
         <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Made for India with ❤️</p>
       </section>
     </div>
