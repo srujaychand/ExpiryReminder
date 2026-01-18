@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Item, Category } from '../types.ts';
 import { CATEGORIES } from '../constants.tsx';
-import { addItem, updateItem } from '../services/storageService.ts';
+import { addItem, updateItem, getItems } from '../services/storageService.ts';
 
 interface AddEditItemProps {
   item?: Item;
@@ -34,11 +34,27 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
       return;
     }
 
+    const currentItems = getItems();
+    const newExpiryIso = new Date(formData.expiryDate!).toISOString();
+
+    // Duplicate Check: Check if an item with same name and same expiry exists
+    // Only check for new items or if the name/expiry changed on an existing item
+    const isDuplicate = currentItems.some(existingItem => 
+      existingItem.id !== item?.id && 
+      existingItem.name.trim().toLowerCase() === formData.name?.trim().toLowerCase() &&
+      existingItem.expiryDate.split('T')[0] === formData.expiryDate
+    );
+
+    if (isDuplicate) {
+      const confirmSave = window.confirm(`An item named "${formData.name}" with the same expiry date already exists. Do you want to add it anyway?`);
+      if (!confirmSave) return;
+    }
+
     const itemToSave: Item = {
       id: item?.id || Date.now().toString(),
-      name: formData.name!,
+      name: formData.name!.trim(),
       category: formData.category as Category,
-      expiryDate: new Date(formData.expiryDate!).toISOString(),
+      expiryDate: newExpiryIso,
       reminderDays: Number(formData.reminderDays),
       notes: formData.notes,
       createdAt: item?.createdAt || new Date().toISOString(),
@@ -54,7 +70,12 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">{item ? 'Edit Item' : 'New Item'}</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-slate-800">{item ? 'Edit Item' : 'New Item'}</h2>
+        <button onClick={onCancel} className="text-slate-400 p-2">
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
@@ -64,22 +85,27 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
             required
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
-            placeholder="e.g. Tomato Sauce"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="e.g. Paracetamol 500mg"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-base"
           />
         </div>
 
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-1.5">Category</label>
-          <select 
-            value={formData.category}
-            onChange={(e) => setFormData({...formData, category: e.target.value as Category})}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
-          >
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select 
+              value={formData.category}
+              onChange={(e) => setFormData({...formData, category: e.target.value as Category})}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none text-base"
+            >
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -90,18 +116,18 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
               required
               value={formData.expiryDate}
               onChange={(e) => setFormData({...formData, expiryDate: e.target.value})}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-base"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Remind Me (Days)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Alert Days</label>
             <input 
               type="number" 
               min="1"
-              max="90"
+              max="365"
               value={formData.reminderDays}
-              onChange={(e) => setFormData({...formData, reminderDays: parseInt(e.target.value)})}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              onChange={(e) => setFormData({...formData, reminderDays: parseInt(e.target.value) || 7})}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-base"
             />
           </div>
         </div>
@@ -112,8 +138,8 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
             rows={3}
             value={formData.notes}
             onChange={(e) => setFormData({...formData, notes: e.target.value})}
-            placeholder="Storage instructions or quantity..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+            placeholder="Quantity, dosage, or storage info..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none text-base"
           />
         </div>
 
@@ -121,13 +147,13 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
           <button 
             type="button"
             onClick={onCancel}
-            className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+            className="flex-1 px-4 py-4 border border-slate-200 rounded-2xl font-bold text-slate-600 active:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button 
             type="submit"
-            className="flex-1 px-4 py-3 bg-blue-600 rounded-xl font-bold text-white hover:bg-blue-700 shadow-md active:scale-95 transition-all"
+            className="flex-1 px-4 py-4 bg-blue-600 rounded-2xl font-bold text-white shadow-lg shadow-blue-200 active:scale-95 transition-all"
           >
             {item ? 'Update Item' : 'Add Item'}
           </button>
