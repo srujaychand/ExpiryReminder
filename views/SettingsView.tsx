@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { getAppSettings, saveAppSettings, getItems, saveItems } from '../services/storageService';
-import { requestNotificationPermission } from '../services/notificationService';
-import { AppSettings } from '../types';
+import { getAppSettings, saveAppSettings, getItems, saveItems } from '../services/storageService.ts';
+import { requestNotificationPermission } from '../services/notificationService.ts';
+import { AppSettings } from '../types.ts';
 
 interface SettingsViewProps {
   onRefresh: () => void;

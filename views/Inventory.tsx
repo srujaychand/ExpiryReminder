@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
-import { Item, ExpiryStatus } from '../types';
-import { getExpiryStatus, deleteItem } from '../services/storageService';
-import StatusBadge from '../components/StatusBadge';
+import { Item, ExpiryStatus } from '../types.ts';
+import { getExpiryStatus, deleteItem } from '../services/storageService.ts';
+import StatusBadge from '../components/StatusBadge.tsx';
 import { APP_ICONS } from '../constants.tsx';
 
 interface InventoryProps {
@@ -31,12 +30,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
 
   return (
     <div className="relative">
-      {/* 
-          Sticky Filter Section 
-          - top-16 matches the fixed Header height.
-          - bg-slate-50 is 100% opaque to hide scrolling items completely.
-          - -mx-4 and px-4 ensures the background extends to the container edges.
-      */}
       <div className="sticky top-16 bg-slate-50 z-40 -mx-4 px-4 pt-4 pb-4 border-b border-slate-200 shadow-sm">
         <div className="relative mb-4">
           <input 
@@ -68,7 +61,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, onEdit, onRefresh }) => {
         </div>
       </div>
 
-      {/* Item list - ensure enough margin-top so the first item isn't partially hidden */}
       <div className="space-y-4 pt-4">
         {filteredItems.length > 0 ? (
           filteredItems.map(item => {

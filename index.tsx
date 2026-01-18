@@ -1,7 +1,6 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,15 +15,12 @@ root.render(
 );
 
 // PWA Service Worker Registration
-// Improved for environment compatibility
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Using a relative path to SW script
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('SW registered'))
       .catch((err) => {
-        // Log but don't crash; often fails in sandboxed preview environments
-        console.warn('PWA Service Worker registration skipped (expected in some dev environments):', err.message);
+        console.warn('PWA Service Worker registration skipped:', err.message);
       });
   });
 }

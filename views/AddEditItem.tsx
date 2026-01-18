@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { Item, Category } from '../types';
+import { Item, Category } from '../types.ts';
 import { CATEGORIES } from '../constants.tsx';
-import { addItem, updateItem } from '../services/storageService';
+import { addItem, updateItem } from '../services/storageService.ts';
 
 interface AddEditItemProps {
   item?: Item;
@@ -23,7 +22,7 @@ const AddEditItem: React.FC<AddEditItemProps> = ({ item, onSave, onCancel }) => 
     if (item) {
       setFormData({
         ...item,
-        expiryDate: item.expiryDate.split('T')[0], // Extract date part for input[type="date"]
+        expiryDate: item.expiryDate.split('T')[0],
       });
     }
   }, [item]);

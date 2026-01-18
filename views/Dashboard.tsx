@@ -1,8 +1,7 @@
-
 import React from 'react';
-import { Item, ExpiryStatus } from '../types';
-import { getExpiryStatus } from '../services/storageService';
-import StatusBadge from '../components/StatusBadge';
+import { Item, ExpiryStatus } from '../types.ts';
+import { getExpiryStatus } from '../services/storageService.ts';
+import StatusBadge from '../components/StatusBadge.tsx';
 
 interface DashboardProps {
   items: Item[];

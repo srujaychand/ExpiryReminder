@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import Layout from './components/Layout';
-import Dashboard from './views/Dashboard';
-import Inventory from './views/Inventory';
-import AddEditItem from './views/AddEditItem';
-import SettingsView from './views/SettingsView';
-import { getItems, getAppSettings, saveItems } from './services/storageService';
-import { checkAndNotify } from './services/notificationService';
-import { Item } from './types';
+import Layout from './components/Layout.tsx';
+import Dashboard from './views/Dashboard.tsx';
+import Inventory from './views/Inventory.tsx';
+import AddEditItem from './views/AddEditItem.tsx';
+import SettingsView from './views/SettingsView.tsx';
+import { getItems, saveItems } from './services/storageService.ts';
+import { checkAndNotify } from './services/notificationService.ts';
+import { Item } from './types.ts';
 
 type ViewState = 'dashboard' | 'items' | 'add' | 'settings' | 'edit';
 
