@@ -1,6 +1,11 @@
-
 import React from 'react';
 import { Category, ExpiryStatus } from './types.ts';
+
+// Configurable Affiliate Settings
+//export const AFFILIATE_API_URL = "https://api.example.com/api/affiliate-link";
+export const AFFILIATE_API_URL = "https://medullary-alethia-enchantedly.ngrok-free.dev/api/affiliate-link";
+
+export const AFFILIATE_CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 export const CATEGORIES = [
   Category.Grocery,

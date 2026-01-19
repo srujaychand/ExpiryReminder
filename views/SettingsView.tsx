@@ -6,9 +6,10 @@ import { CATEGORIES, STORE_OPTIONS } from '../constants.tsx';
 
 interface SettingsViewProps {
   onRefresh: () => void;
+  onNavigateDisclosure: () => void;
 }
 
-const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh, onNavigateDisclosure }) => {
   const [settings, setSettings] = useState<AppSettings>(getAppSettings());
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(
     'Notification' in window ? Notification.permission : 'denied'
@@ -166,6 +167,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onRefresh }) => {
           className="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 uppercase tracking-widest active:bg-slate-100 transition-all"
         >
           Send Test Notification
+        </button>
+      </section>
+
+      {/* Transparency Section */}
+      <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+        <h3 className="font-bold text-slate-800 border-b pb-2 flex items-center">
+          <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Transparency & Privacy
+        </h3>
+        <button 
+          onClick={onNavigateDisclosure}
+          className="w-full flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl active:bg-slate-100 transition-colors group"
+        >
+          <div className="text-left">
+            <h4 className="text-sm font-bold text-slate-700">Transparency & Privacy</h4>
+            <p className="text-[10px] text-slate-400">Learn about your data and our support model</p>
+          </div>
+          <svg className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </section>
 

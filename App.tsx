@@ -3,11 +3,12 @@ import Layout from './components/Layout.tsx';
 import Inventory from './views/Inventory.tsx';
 import AddEditItem from './views/AddEditItem.tsx';
 import SettingsView from './views/SettingsView.tsx';
+import AffiliateDisclosure from './views/AffiliateDisclosure.tsx';
 import { getItems } from './services/storageService.ts';
 import { checkAndNotify } from './services/notificationService.ts';
 import { Item } from './types.ts';
 
-type ViewState = 'items' | 'add' | 'settings' | 'edit';
+type ViewState = 'items' | 'add' | 'settings' | 'edit' | 'disclosure';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('items');
@@ -56,20 +57,32 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case 'items':
-        return <Inventory items={items} onEdit={handleEdit} onRefresh={refreshItems} />;
+        return <Inventory 
+                  items={items} 
+                  onEdit={handleEdit} 
+                  onRefresh={refreshItems} 
+                  onNavigateDisclosure={() => setCurrentView('disclosure')} 
+                />;
       case 'add':
         return <AddEditItem onSave={handleBackToItems} onCancel={() => setCurrentView('items')} />;
       case 'edit':
         return <AddEditItem item={editingItem || undefined} onSave={handleBackToItems} onCancel={handleBackToItems} />;
       case 'settings':
-        return <SettingsView onRefresh={refreshItems} />;
+        return <SettingsView onRefresh={refreshItems} onNavigateDisclosure={() => setCurrentView('disclosure')} />;
+      case 'disclosure':
+        return <AffiliateDisclosure onBack={() => setCurrentView('settings')} />;
       default:
-        return <Inventory items={items} onEdit={handleEdit} onRefresh={refreshItems} />;
+        return <Inventory 
+                  items={items} 
+                  onEdit={handleEdit} 
+                  onRefresh={refreshItems} 
+                  onNavigateDisclosure={() => setCurrentView('disclosure')}
+                />;
     }
   };
 
   return (
-    <Layout activeTab={currentView === 'edit' ? 'add' : currentView as any} onTabChange={setCurrentView}>
+    <Layout activeTab={['edit', 'disclosure'].includes(currentView) ? 'add' : currentView as any} onTabChange={setCurrentView}>
       {renderView()}
     </Layout>
   );
